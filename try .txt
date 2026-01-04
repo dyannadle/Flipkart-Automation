@@ -1,0 +1,129 @@
+# Import necessary modules from the selenium library.
+from selenium import webdriver  # Main module to control the browser
+from selenium.webdriver.common.by import By  # Used to specify the mechanism to find elements (e.g., By.XPATH)
+from selenium.webdriver.support.ui import WebDriverWait  # Used to wait for an element to meet a certain condition
+from selenium.webdriver.support import expected_conditions as EC  # Provides a set of predefined conditions to wait for (e.g., element_to_be_clickable)
+from selenium.common.exceptions import TimeoutException, NoSuchElementException  # Imports exceptions for robust error handling
+import time  # Used for simple, fixed time delays (sleep)
+
+# --- Configuration ---
+# Store the credentials and URL as variables for easy modification and security (though for real apps, use environment variables).
+FLIPKART_EMAIL_OR_MOBILE = "YOUR_EMAIL_OR_MOBILE"  # Placeholder for your Flipkart email or mobile number
+FLIPKART_PASSWORD = "YOUR_PASSWORD"  # Placeholder for your Flipkart password
+FLIPKART_URL = "https://www.flipkart.com/"  # The target URL
+
+def automate_flipkart_login():
+    """Automates the login process for Flipkart."""
+    
+    # 1. Initialize the WebDriver (Chrome is used here)
+    # This line launches a new Chrome browser window and creates the 'driver' object to control it.
+    try:
+        driver = webdriver.Chrome()
+    except Exception as e:
+        # Prints an error message if the browser fails to start (e.g., due to missing/outdated driver)
+        print(f"Error initializing WebDriver. Make sure Chrome is installed and updated, and if necessary, ChromeDriver is in your PATH. Error: {e}")
+        return
+
+    driver.maximize_window()  # Maximizes the browser window for better visibility and consistent element interaction.
+    print("Browser started successfully.")
+
+    try:
+        # 2. Navigate to Flipkart
+        driver.get(FLIPKART_URL)  # Directs the browser to open the Flipkart homepage.
+        print(f"Navigated to {FLIPKART_URL}")
+
+        # 3. Handle the Login Pop-up (The 'X' button to close the modal)
+        # Defines the XPath locator for the pop-up's close button (the '✕' character).
+        POPUP_CLOSE_BUTTON_XPATH = "//button[text()='✕']"
+        
+        try:
+            # Wait for the close button to appear and be ready to be clicked (max 10 seconds).
+            close_button = WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((By.XPATH, POPUP_CLOSE_BUTTON_XPATH))
+            )
+            close_button.click()  # Clicks the 'X' button to dismiss the modal.
+            print("Login pop-up closed.")
+
+        except TimeoutException:
+            # Executes if the close button does not appear within 10 seconds.
+            print("Login pop-up not found or already closed. Proceeding.")
+        except Exception as e:
+            # Catches any other exception during the pop-up handling.
+            print(f"An error occurred while trying to close the pop-up: {e}")
+
+        # --- Re-Initiating Login (Optional for some page structures) ---
+        
+        LOGIN_LINK_XPATH = "//a[text()='Login']" # XPath for the main 'Login' link on the homepage header.
+        try:
+            login_link = driver.find_element(By.XPATH, LOGIN_LINK_XPATH) # Finds the Login link element.
+            login_link.click() # Clicks the Login link, which re-opens the login modal/page.
+            print("Clicked the main 'Login' link.")
+            
+            # Waits for a clear indication that the login form/modal is visible (e.g., the 'Login' text inside the form).
+            WebDriverWait(driver, 10).until(
+                EC.visibility_of_element_located((By.XPATH, "//span[text()='Login']"))
+            )
+
+        except NoSuchElementException:
+            # Handles the case where the 'Login' link is not visible (e.g., if the modal is already open).
+            print("Could not find the main 'Login' link. Assuming the login modal is already visible or the page structure has changed.")
+            pass # Allows the script to continue to the next steps
+
+        # 4. Locate and fill the Email/Mobile field
+        try:
+            # Finds the input field using XPath, targeting a text input with specific classes.
+            email_field = driver.find_element(By.XPATH, "//input[@type='text' and @class='_2IX_2- VJZDxU']")
+            email_field.send_keys(FLIPKART_EMAIL_OR_MOBILE)  # Types the defined email/mobile into the field.
+            print("Mobile/Email entered.")
+        except NoSuchElementException:
+            print("Error: Could not find the Email/Mobile field. Check the XPATH/Locator.")
+            return # Exits the function if the critical element is not found
+
+        # 5. Locate and fill the Password field
+        try:
+            # Finds the password input field.
+            password_field = driver.find_element(By.XPATH, "//input[@type='password' and @class='_2IX_2- _3mctLh VJZDxU']")
+            password_field.send_keys(FLIPKART_PASSWORD)  # Types the defined password into the field.
+            print("Password entered.")
+        except NoSuchElementException:
+            print("Error: Could not find the Password field. Check the XPATH/Locator.")
+            return
+
+        # 6. Locate and click the final Login button within the modal
+        try:
+            # Finds the main 'Login' button within the modal.
+            final_login_button = driver.find_element(By.XPATH, "//button[@class='_2KpZ6l _2HKlqd _3AWRsL']")
+            final_login_button.click()  # Clicks the button to submit the login form.
+            print("Clicked the final Login button.")
+        except NoSuchElementException:
+            print("Error: Could not find the final Login button. Check the XPATH/Locator.")
+            return
+
+        # 7. Verification (Simple check for an element only visible after login)
+        time.sleep(5)  # Simple, hard wait for 5 seconds to allow the page to load after login.
+        
+        # Defines the XPath for an element that should only appear after a successful login (e.g., 'My Account' link).
+        POST_LOGIN_ELEMENT_XPATH = "//div[text()='My Account']" 
+        try:
+            # Waits up to 15 seconds for the 'My Account' element to be present on the page.
+            WebDriverWait(driver, 15).until(
+                EC.presence_of_element_located((By.XPATH, POST_LOGIN_ELEMENT_XPATH))
+            )
+            print("Login successful! 'My Account' link found.")
+        except TimeoutException:
+            # Executes if the post-login element is not found, indicating a possible login failure.
+            print("Login failed: Did not find the post-login element within the timeout.")
+        
+    except Exception as e:
+        # Catches any general, unhandled exception during the main execution flow.
+        print(f"An unexpected error occurred during automation: {e}")
+
+    finally:
+        # 8. Clean up
+        time.sleep(10)  # Pauses the script for 10 seconds to allow the user to see the result.
+        driver.quit()  # Closes the browser and terminates the WebDriver session.
+        print("Browser closed.")
+
+if __name__ == "__main__":
+    # Standard Python construct to ensure the function runs only when the script is executed directly.
+    automate_flipkart_login()
