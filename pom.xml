@@ -7,6 +7,10 @@
     <artifactId>SeleniumMavenProject</artifactId>
     <version>1.0-SNAPSHOT</version>
 
+    <name>Flipkart Automation Framework</name>
+    <description>A robust Selenium-java based automation framework for testing Flipkart's search and product flows using Page Object Model (POM).</description>
+    <url>https://github.com/dyannadle/Flipkart-Automation</url>
+
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
